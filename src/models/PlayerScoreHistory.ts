@@ -3,8 +3,8 @@ import { Schema, model } from 'mongoose';
 export const badges = ['cooperator', 'traitor', 'opportunist', 'guardian'] as const;
 export type BadgesType = typeof badges[number];
 
-export const ropeActions = ['pull', 'hold', 'fix'] as const;
-export type RopeActionType = typeof ropeActions[number];
+export const crystalActions = ['absorb', 'hold', 'fix'] as const;
+export type CrystalActionType = typeof crystalActions[number];
 
 export interface IBadge {
     name: string;
@@ -16,7 +16,7 @@ export interface IBadge {
 export interface IDailyScore {
   date: Date;
   score: number;
-  action: RopeActionType;
+  action: CrystalActionType;
 }
 
 export interface IPlayerScoreHistory {
@@ -37,7 +37,7 @@ const badgeSchema = new Schema<IBadge>({
 const dailyScoreSchema = new Schema<IDailyScore>({
   date: { type: Date, required: true },
   score: { type: Number, required: true },
-  action: { type: String, enum: ropeActions, required: true}
+  action: { type: String, enum: crystalActions, required: true}
 });
 
 const playerScoreHistorySchema = new Schema<IPlayerScoreHistory>({

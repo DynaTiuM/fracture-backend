@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import Rope from '../models/Rope'
+import Crystal from '../models/Crystal'
 import { GameService } from './GameService';
 
 export class SchedulerService {
@@ -9,8 +9,8 @@ export class SchedulerService {
     // Triggers and manages what has been done yesterday
     cron.schedule('* * * * *', async () => {
       console.log("CRON Executed!")
-      const broken = await this.gameService.checkRopeBreak();
-      // If the rope broke, we have to assign the Badges and start a new session
+      const broken = await this.gameService.checkCrystalBreak();
+      // If the crystal broke, we have to assign the Badges and start a new session
       if (broken) {
         await this.gameService.assignEndOfSessionBadges();
         await this.gameService.startNewSession();
@@ -19,16 +19,16 @@ export class SchedulerService {
       // Otherwise, we enable the action for the new day
       await this.gameService.enableAction();
       
-      // We verify that the rope exists
-      const rope = await Rope.findOne();
-      if (!rope) {
-        console.error("NO ROPE FOUND!, creating a new one....");
-        this.gameService.createNewRope();
+      // We verify that the crystal exists
+      const crystal = await Crystal.findOne();
+      if (!crystal) {
+        console.error("No crystal found!, creating a new one....");
+        this.gameService.createNewCrystal();
         return;
       };
       // We calculate the difference of days
       const today = new Date();
-      const sessionStart = new Date(rope.sessionStart);
+      const sessionStart = new Date(crystal.sessionStart);
       const diffDays = Math.floor((today.getTime() - sessionStart.getTime()) / (1000 * 60 * 60 * 24));
 
       // for test only

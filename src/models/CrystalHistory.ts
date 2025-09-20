@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-const ropeHistorySchema = new Schema({
+const crystalHistorySchema = new Schema({
   sessionStart: { type: Date, required: true },
   sessionEnd: { type: Date, required: true },
   broken: { type: Boolean, default: false },
@@ -8,4 +8,4 @@ const ropeHistorySchema = new Schema({
   finalDurability: { type: Number, required: true }
 });
 
-export default model('RopeHistory', ropeHistorySchema);
+export default model('CrystalHistory', crystalHistorySchema);

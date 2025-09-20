@@ -1,12 +1,12 @@
 import { connectDB } from './config/db';
-import Rope from './models/Rope';
+import Crystal from './models/Crystal';
 import Player from './models/Player';
 import PlayerScoreHistory from './models/PlayerScoreHistory';
 
 async function clearDB() {
   await connectDB();
 
-  await Rope.deleteMany({});
+  await Crystal.deleteMany({});
   await Player.deleteMany({});
   await PlayerScoreHistory.deleteMany({});
 

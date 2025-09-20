@@ -1,18 +1,18 @@
-import Rope from '../models/Rope';
+import Crystal from '../models/Crystal';
 import Player from '../models/Player';
-import PlayerScoreHistory, { IBadge, RopeActionType } from '../models/PlayerScoreHistory';
+import PlayerScoreHistory, { IBadge, CrystalActionType } from '../models/PlayerScoreHistory';
 import { BadgeService } from './BadgeService';
 import { io as defaultIo } from '../websocket/socket';
-import RopeHistory from '../models/RopeHistory';
+import CrystalHistory from '../models/CrystalHistory';
 
 export class GameService {
   constructor(private io = defaultIo) {}
   private badgeService = new BadgeService();
   private POINTS_PER_PULL = 5;
 
-  async addAction(playerId: string, username: string, action: RopeActionType) {
-    const rope = await Rope.findOne();
-    if (!rope) throw new Error('Rope not found');
+  async addAction(playerId: string, username: string, action: CrystalActionType) {
+    const crystal = await Crystal.findOne();
+    if (!crystal) throw new Error('Crystal not found');
 
     let player = await Player.findOne({ discordId: playerId });
     if (!player) {
@@ -20,18 +20,18 @@ export class GameService {
       console.warn(`Player not found, created a new one with player ID: ${playerId}`);
     }
 
-    if (rope.have_played.includes(playerId)) {
+    if (crystal.have_played.includes(playerId)) {
       throw new Error('Already acted today');
     }
 
-    rope.have_played.push(playerId);
+    crystal.have_played.push(playerId);
 
-    if (action === 'pull') rope.durability -= this.POINTS_PER_PULL;
-    await rope.save();
-    const todayScore = action === 'pull' ? this.POINTS_PER_PULL : 0;
+    if (action === 'absorb') crystal.durability -= this.POINTS_PER_PULL;
+    await crystal.save();
+    const todayScore = action === 'absorb' ? this.POINTS_PER_PULL : 0;
 
     await PlayerScoreHistory.findOneAndUpdate(
-      { playerId, sessionStart: rope.sessionStart },
+      { playerId, sessionStart: crystal.sessionStart },
       { 
         $push: { dailyScores: { date: new Date(), score: todayScore, action } },
         $inc: { weeklyScore: todayScore },
@@ -40,33 +40,33 @@ export class GameService {
       { upsert: true, new: true }
     );
 
-    this.io.emit('actionAdded', { rope, player });
-    return { rope, player };
+    this.io.emit('actionAdded', { crystal, player });
+    return { crystal, player };
   }
 
   async enableAction() {
-    const rope = await Rope.findOne();
-    if (!rope) return;
+    const crystal = await Crystal.findOne();
+    if (!crystal) return;
 
     // Clearing actions so that users can act again for the desired day
-    rope.have_played = [];
-    await rope.save();
+    crystal.have_played = [];
+    await crystal.save();
 
-    this.io.emit('dailyReset', rope);
+    this.io.emit('dailyReset', crystal);
   }
 
-  async checkRopeBreak() {
-    const rope = await Rope.findOne();
-    if (!rope || !rope.broken) return false;
+  async checkCrystalBreak() {
+    const crystal = await Crystal.findOne();
+    if (!crystal || !crystal.broken) return false;
 
     const players = await Player.find();
 
-    // If the rope broke, we put scores of every players to 0
+    // If the crystal broke, we put scores of every players to 0
     for (const player of players) {
 
       // We also put the dailyScores to 0
       await PlayerScoreHistory.updateOne(
-        { playerId: player.discordId, sessionStart: rope.sessionStart },
+        { playerId: player.discordId, sessionStart: crystal.sessionStart },
         {
           $push: { dailyScores: { date: new Date(), score: 0 } },
           $set: { weeklyScore: 0 },
@@ -74,73 +74,73 @@ export class GameService {
         { upsert: true }
       );
 
-      this.io.emit('sessionEnded', { rope, message: 'The rope broke! Scores set to 0.' });
+      this.io.emit('sessionEnded', { crystal, message: 'The crystal broke! Scores set to 0.' });
 
       return true;
     }
   }
 
   async assignEndOfSessionBadges() {
-    const rope = await Rope.findOne();
-    if (!rope) return;
+    const crystal = await Crystal.findOne();
+    if (!crystal) return;
 
     const players = await Player.find();
-    const histories = await PlayerScoreHistory.find({ sessionStart: rope.sessionStart });
+    const histories = await PlayerScoreHistory.find({ sessionStart: crystal.sessionStart });
 
     for (const player of players) {
       const history = histories.find(h => h.playerId === player.discordId);
       if (!history) continue;
 
-      const pullCount = history.dailyScores.filter(ds => ds.action === 'pull').length;
+      const absorbCount = history.dailyScores.filter(ds => ds.action === 'absorb').length;
       const holdCount = history.dailyScores.filter(ds => ds.action === 'hold').length;
       const fixCount = history.dailyScores.filter(ds => ds.action === 'fix').length;
 
       let badge: Partial<IBadge> | null = null;
 
-      if (holdCount > pullCount) {
+      if (holdCount > absorbCount) {
         badge = { name: 'Cooperator', type: 'cooperator' };
-      } else if (pullCount > holdCount && !rope.broken) {
+      } else if (absorbCount > holdCount && !crystal.broken) {
         badge = { name: 'Opportunist', type: 'opportunist' };
-      } else if (rope.broken && player.discordId === rope.breakerId) {
+      } else if (crystal.broken && player.discordId === crystal.breakerId) {
         badge = { name: 'Traitor', type: 'traitor' };
-      } else if (fixCount > Math.max(holdCount, pullCount)) {
+      } else if (fixCount > Math.max(holdCount, absorbCount)) {
         badge = { name: 'Guardian', type: 'guardian' };
       }
 
       if (badge) {
-        await this.badgeService.assignBadgeToSession(player.discordId, rope.sessionStart, badge);
+        await this.badgeService.assignBadgeToSession(player.discordId, crystal.sessionStart, badge);
       }
     }
   }
 
   async startNewSession() {
-    const rope = await Rope.findOne();
-    if (!rope) return;
+    const crystal = await Crystal.findOne();
+    if (!crystal) return;
     
-    await RopeHistory.create({
-      sessionStart: rope.sessionStart,
+    await CrystalHistory.create({
+      sessionStart: crystal.sessionStart,
       sessionEnd: new Date(),
-      broken: rope.broken,
-      breakerId: rope.breakerId,
-      finalDurability: rope.durability
+      broken: crystal.broken,
+      breakerId: crystal.breakerId,
+      finalDurability: crystal.durability
     });
 
-    const newRope = this.createNewRope();
+    const newCrystal = this.createNewCrystal();
 
-    this.io.emit('newSession', newRope);
+    this.io.emit('newSession', newCrystal);
     console.log('New Session beginning!');
   }
 
-  async createNewRope() {
-    await Rope.deleteMany({});
-    const newRope = new Rope({
+  async createNewCrystal() {
+    await Crystal.deleteMany({});
+    const newCrystal = new Crystal({
       durability: 100,
       broken: false,
       actions: [],
       sessionStartDate: new Date(),
     });
-    await newRope.save();
+    await newCrystal.save();
   
-    return newRope;
+    return newCrystal;
   }
 }

@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import Player from '../models/Player';
 import PlayerScoreHistory from '../models/PlayerScoreHistory';
-import RopeHistory from '../models/RopeHistory';
+import CrystalHistory from '../models/CrystalHistory';
 
 const router = Router();
 
 router.get('/', async (req, res) => {
   try {
-    const lastRopeHistory = await RopeHistory.findOne().sort({ sessionStart: -1 });
+    const lastCrystalHistory = await CrystalHistory.findOne().sort({ sessionStart: -1 });
 
     const players = await Player.find();
 
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
       players.map(async (player) => {
         const history = await PlayerScoreHistory.findOne({ 
           playerId: player.discordId,
-          sessionStart: lastRopeHistory?.sessionStart
+          sessionStart: lastCrystalHistory?.sessionStart
         });
 
         const allTimeScoreAgg = await PlayerScoreHistory.aggregate([
@@ -35,12 +35,12 @@ router.get('/', async (req, res) => {
     );
 
     res.json({
-      rope: lastRopeHistory
+      crystal: lastCrystalHistory
         ? {
-            durability: lastRopeHistory.finalDurability,
-            broken: lastRopeHistory.broken,
-            sessionStartDate: lastRopeHistory.sessionStart,
-            breakerId: lastRopeHistory.breakerId
+            durability: lastCrystalHistory.finalDurability,
+            broken: lastCrystalHistory.broken,
+            sessionStartDate: lastCrystalHistory.sessionStart,
+            breakerId: lastCrystalHistory.breakerId
           }
         : null,
       leaderboard,
