@@ -11,10 +11,13 @@ import actionLeaderboard from './routes/leaderboard';
 import actionPing from './routes/ping';
 import actionCrystal from './routes/crystal';
 import actionBonus from './routes/bonus';
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
+app.use(cors({ origin: "*" }));
+
 
 const httpServer = createServer(app);
 
