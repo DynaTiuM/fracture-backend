@@ -1,6 +1,6 @@
 import PlayerScoreHistory, { IBadge } from '../models/PlayerScoreHistory';
 
-export class BadgeService {
+export class PlayerScoreHistoryService {
   async assignBadgeToSession(playerId: string, sessionStart: Date, badge: Partial<IBadge>) {
     const newBadge: IBadge = {
       name: badge.name!,

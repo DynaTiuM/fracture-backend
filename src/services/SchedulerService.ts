@@ -1,29 +1,29 @@
 import cron from 'node-cron';
 import Crystal from '../models/Crystal'
-import { GameService } from './GameService';
+import { CrystalService } from './CrystalService';
 
 export class SchedulerService {
-  private gameService = new GameService();
+  private crystalService = new CrystalService();
 
   startDailyTasks() {
     // Triggers and manages what has been done yesterday
-    cron.schedule('* * * * *', async () => {
+    /*cron.schedule('* * * * *', async () => {
       console.log("CRON Executed!")
-      const broken = await this.gameService.checkCrystalBreak();
+      const broken = await this.crystalService.checkCrystalBreak();
       // If the crystal broke, we have to assign the Badges and start a new session
       if (broken) {
-        await this.gameService.assignEndOfSessionBadges();
-        await this.gameService.startNewSession();
+        await this.crystalService.assignEndOfSessionBadges();
+        await this.crystalService.startNewSession();
         return;
       }
       // Otherwise, we enable the action for the new day
-      await this.gameService.enableAction();
+      await this.crystalService.enableAction();
       
       // We verify that the crystal exists
       const crystal = await Crystal.findOne();
       if (!crystal) {
         console.error("No crystal found!, creating a new one....");
-        this.gameService.createNewCrystal();
+        this.crystalService.createNewCrystal();
         return;
       };
       // We calculate the difference of days
@@ -39,11 +39,11 @@ export class SchedulerService {
       // And if the session ends
       if (diffMinutes >= 3) {
         // We assign the badges
-        await this.gameService.assignEndOfSessionBadges();
+        await this.crystalService.assignEndOfSessionBadges();
         // And we start a new session
-        await this.gameService.startNewSession();
+        await this.crystalService.startNewSession();
       }
 
-    });
+    });*/
   }
 }

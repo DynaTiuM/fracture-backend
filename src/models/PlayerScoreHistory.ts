@@ -7,10 +7,10 @@ export const crystalActions = ['absorb', 'hold', 'fix'] as const;
 export type CrystalActionType = typeof crystalActions[number];
 
 export interface IBadge {
-    name: string;
-    type: BadgesType;
-    dateEarned: Date;
-    discordRoleId?: string;
+  name: string;
+  type: BadgesType;
+  dateEarned: Date;
+  discordRoleId?: string;
 }
 
 export interface IDailyScore {
@@ -28,10 +28,10 @@ export interface IPlayerScoreHistory {
 }
 
 const badgeSchema = new Schema<IBadge>({
-    name: { type: String, required: true},
-    type: { type: String, enum: badges, required: true },
-    dateEarned: { type: Date, default: Date.now },
-    discordRoleId: { type: String, default: null}
+  name: { type: String, required: true},
+  type: { type: String, enum: badges, required: true },
+  dateEarned: { type: Date, default: Date.now },
+  discordRoleId: { type: String, default: null}
 })
 
 const dailyScoreSchema = new Schema<IDailyScore>({

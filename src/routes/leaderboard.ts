@@ -34,17 +34,7 @@ router.get('/', async (req, res) => {
       })
     );
 
-    res.json({
-      crystal: lastCrystalHistory
-        ? {
-            durability: lastCrystalHistory.finalDurability,
-            broken: lastCrystalHistory.broken,
-            sessionStartDate: lastCrystalHistory.sessionStart,
-            breakerId: lastCrystalHistory.breakerId
-          }
-        : null,
-      leaderboard,
-    });
+    res.json({ leaderboard });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erreur serveur' });
