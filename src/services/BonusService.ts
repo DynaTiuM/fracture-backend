@@ -7,9 +7,9 @@ export class BonusService {
         const random = Math.random() * totalProbability;
         
         let cumulative = 0;
-        for (const bonus of bonus) {
-            cumulative += bonus.probability;
-            if (random <= cumulative) return bonus;
+        for (const bonus_ of bonus) {
+            cumulative += bonus_.probability;
+            if (random <= cumulative) return bonus_;
         }
 
         // If there is the problem, we return the first one...
