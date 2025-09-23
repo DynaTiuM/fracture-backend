@@ -1,7 +1,12 @@
 import Bonus, { IBonus } from "../models/Bonus";
+import { playerBonusService } from "./PlayerBonusService";
 
 export class BonusService {
-    async drawRandomBonus(): Promise<IBonus> {
+    async drawRandomBonus(playerId: string): Promise<IBonus> {
+        const hasAlreadyDrawn = await playerBonusService.hasPlayerDrawnBonus(playerId);
+
+        if (hasAlreadyDrawn) throw new Error("Player has already drawn a bonus today");
+        
         const bonus = await Bonus.find();
         const totalProbability = bonus.reduce((sum, b) => sum + b.probability, 0);
         const random = Math.random() * totalProbability;

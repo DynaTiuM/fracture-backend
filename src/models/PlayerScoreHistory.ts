@@ -3,7 +3,7 @@ import { Schema, model } from 'mongoose';
 export const badges = ['cooperator', 'traitor', 'opportunist', 'guardian'] as const;
 export type BadgesType = typeof badges[number];
 
-export const crystalActions = ['absorb', 'hold', 'fix'] as const;
+export const crystalActions = ['absorb', 'hold', 'repair'] as const;
 export type CrystalActionType = typeof crystalActions[number];
 
 export interface IBadge {

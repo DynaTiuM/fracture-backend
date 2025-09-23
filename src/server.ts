@@ -5,14 +5,14 @@ import { connectDB } from './config/db';
 import './bot/DiscordBot';
 import { initSocket } from './websocket/socket';
 import { SchedulerService } from './services/SchedulerService';
-import actionRoute from './routes/action';
 import actionLeaderboard from './routes/leaderboard';
 import actionPing from './routes/ping';
 import actionCrystal from './routes/crystal';
 import actionBonus from './routes/bonus';
 import actionToken from './routes/token';
+import actionPlayer from './routes/players';
 import cors from "cors";
-import path from 'path';
+
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 dotenv.config();
@@ -37,14 +37,14 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 app.use(express.json());
 
-app.use('/api/action', actionRoute);
 app.use('/api/leaderboard', actionLeaderboard);
 app.use('/api/ping', actionPing);
 app.use('/api/crystal', actionCrystal);
 app.use('/api/bonus', actionBonus);
 app.use('/api/token', actionToken);
+app.use('/api/players', actionPlayer);
 
-const FRONTEND_PORT = 5173; // port Vite/React
+const FRONTEND_PORT = 5173;
 app.use(
   '/',
   createProxyMiddleware({

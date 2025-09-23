@@ -11,7 +11,9 @@ export function initSocket(server: http.Server) {
 
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
-
+    socket.on("joinPlayerRoom", ({ playerId }) => {
+      socket.join(playerId);
+    });
     socket.on('startActivity', async({playerId}) => {
       const bonus = await playerBonusService.processOnPlay(playerId);
       for(const bonus_ of bonus) {

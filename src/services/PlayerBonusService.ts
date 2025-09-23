@@ -3,6 +3,7 @@ import Bonus from '../models/Bonus';
 import Crystal from '../models/Crystal';
 import PlayerBonus from '../models/PlayerBonus';
 import PlayerBonusUsage from '../models/PlayerBonusUsage';
+import { io } from '../websocket/socket';
 import { bonusService } from './BonusService';
 
 import { Server } from 'socket.io';
@@ -18,6 +19,24 @@ export class PlayerBonusService {
     });
 
     return newPlayerBonus;
+  }
+
+  async hasPlayerDrawnBonus(playerId: string): Promise<boolean> {
+    const currentSession = await Crystal.findOne().sort({ sessionStart: -1 });
+    if (!currentSession) {
+      throw new Error("No active crystal session");
+    }
+
+    const alreadyOpened = await PlayerBonus.findOne({
+      playerId,
+      dateAcquired: { $gte: currentSession.sessionStart }
+    });
+
+    if (alreadyOpened) {
+      return true;
+    }
+    return false;
+
   }
 
   async useBonus(playerBonusId: string, playerId: string, targetIds: string[] = [], useTomorrow: boolean = false) {
@@ -81,38 +100,34 @@ export class PlayerBonusService {
   }
 
 
-  async getPlayerBonuses(playerId: string) {
+  async getPlayerBonus(playerId: string) {
     const allBonuses = await PlayerBonus.find({ playerId });
     const usages = await PlayerBonusUsage.find({ playerId });
 
     const usedBonusIds = usages.map(u => u.playerBonusId.toString());
 
     const unused = allBonuses.filter(b => !usedBonusIds.includes(b._id.toString()));
-    const used = allBonuses.filter(b => usedBonusIds.includes(b._id.toString()));
 
-    const enrichBonus = async (playerBonus: any, usage?: any) => {
-        const bonus = await Bonus.findOne({ id: playerBonus.bonusId });
-        return {
-            ...playerBonus.toObject(),
-            name: bonus?.name,
-            description: bonus?.description,
-            rarity: bonus?.rarity
-        };
+    const enrichBonus = async (playerBonus: any) => {
+      const bonus = await Bonus.findOne({ id: playerBonus.bonusId });
+      return {
+        ...playerBonus.toObject(),
+        name: bonus?.name,
+        description: bonus?.description,
+        rarity: bonus?.rarity
+      };
     };
 
-    return {
-        unused: await Promise.all(unused.map(b => enrichBonus(b))),
-        used: await Promise.all(used.map(b => {
-            const usage = usages.find(u => u.playerBonusId.toString() === b._id.toString());
-            return enrichBonus(b, usage);
-        }))
-    };
+    return await Promise.all(unused.map(b => enrichBonus(b)));
   }
 
+
   async giveChestReward(playerId: string) {
-    const randomBonus = await bonusService.drawRandomBonus();
+    const randomBonus = await bonusService.drawRandomBonus(playerId);
     const playerBonus = await PlayerBonus.create({ playerId, bonusId: randomBonus.id, dateAcquired: new Date() });
     const bonus = await Bonus.findOne({ id: playerBonus.bonusId })
+
+    io.to(playerId).emit("bonusDrawn", bonus);
     return { playerBonus, bonus };
   }
 

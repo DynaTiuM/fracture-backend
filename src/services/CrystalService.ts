@@ -4,48 +4,47 @@ import CrystalHistory from "../models/CrystalHistory";
 import Player from "../models/Player";
 import PlayerBonusUsage from "../models/PlayerBonusUsage";
 import PlayerScoreHistory, { CrystalActionType, IBadge } from "../models/PlayerScoreHistory";
-import { io as defaultIo } from '../websocket/socket';
-import { PlayerScoreHistoryService } from "./PlayerScoreHistoryService";
+import { io } from '../websocket/socket';
+import { playerScoreHistoryService } from './PlayerScoreHistoryService';
+import { ACTIONS_EFFECTS } from '../game/ActionHandler';
 
 export class CrystalService {
+
+  async addAction(playerId: string, action: CrystalActionType) {
+    const crystal = await Crystal.findOne();
+    if (!crystal) throw new Error("Crystal not found");
+
+    const player = await Player.findOne({ discordId: playerId });
+    if (!player) throw new Error("Player not found");
+
+    if (crystal.have_played.includes(playerId)) {
+      throw new Error("The player already acted today");
+    }
+
+    crystal.have_played.push(playerId);
+
+    const effects = await ACTIONS_EFFECTS[action](playerId);
     
-  private playerScoreHistoryService = new PlayerScoreHistoryService();
-  constructor(private io = defaultIo) {}
-  private POINTS_PER_PULL = 5;
+    crystal.durability += effects.crystalDelta;
+    await crystal.save();
 
-  async addAction(playerId: string, username: string, action: CrystalActionType) {
-      const crystal = await Crystal.findOne();
-      if (!crystal) throw new Error('Crystal not found');
+    const todayScore = effects.scoreDelta;
 
-      let player = await Player.findOne({ discordId: playerId });
-      if (!player) {
-        player = await Player.create({ discordId: playerId, username });
-        console.warn(`Player not found, created a new one with player ID: ${playerId}`);
-      }
+    await PlayerScoreHistory.findOneAndUpdate(
+      { playerId, sessionStart: crystal.sessionStart },
+      {
+        $push: { dailyScores: { date: new Date(), score: todayScore, action } },
+        $inc: { weeklyScore: todayScore },
+        $setOnInsert: { badge: null },
+      },
+      { upsert: true, new: true }
+    );
 
-      if (crystal.have_played.includes(playerId)) {
-        throw new Error('Already acted today');
-      }
+    io.emit("actionAdded", { crystal, player, action, effects });
 
-      crystal.have_played.push(playerId);
-
-      if (action === 'absorb') crystal.durability -= this.POINTS_PER_PULL;
-      await crystal.save();
-      const todayScore = action === 'absorb' ? this.POINTS_PER_PULL : 0;
-
-      await PlayerScoreHistory.findOneAndUpdate(
-        { playerId, sessionStart: crystal.sessionStart },
-        { 
-            $push: { dailyScores: { date: new Date(), score: todayScore, action } },
-            $inc: { weeklyScore: todayScore },
-            $setOnInsert: { badge: null }
-        },
-        { upsert: true, new: true }
-      );
-
-      this.io.emit('actionAdded', { crystal, player });
-      return { crystal, player };
+    return { crystal, player, effects };
   }
+
 
   async enableAction() {
       const crystal = await Crystal.findOne();
@@ -55,7 +54,7 @@ export class CrystalService {
       crystal.have_played = [];
       await crystal.save();
   
-      this.io.emit('dailyReset', crystal);
+      io.emit('dailyReset', crystal);
   }
 
   async checkCrystalBreak() {
@@ -66,7 +65,6 @@ export class CrystalService {
   
       // If the crystal broke, we put scores of every players to 0
       for (const player of players) {
-  
         // We also put the dailyScores to 0
         await PlayerScoreHistory.updateOne(
           { playerId: player.discordId, sessionStart: crystal.sessionStart },
@@ -77,7 +75,7 @@ export class CrystalService {
           { upsert: true }
         );
   
-        this.io.emit('sessionEnded', { crystal, message: 'The crystal broke! Scores set to 0.' });
+        io.emit('sessionEnded', { crystal, message: 'The crystal broke! Scores set to 0.' });
   
         return true;
       }
@@ -96,7 +94,7 @@ export class CrystalService {
   
         const absorbCount = history.dailyScores.filter(ds => ds.action === 'absorb').length;
         const holdCount = history.dailyScores.filter(ds => ds.action === 'hold').length;
-        const fixCount = history.dailyScores.filter(ds => ds.action === 'fix').length;
+        const repairCount = history.dailyScores.filter(ds => ds.action === 'repair').length;
   
         let badge: Partial<IBadge> | null = null;
   
@@ -106,32 +104,32 @@ export class CrystalService {
           badge = { name: 'Opportunist', type: 'opportunist' };
         } else if (crystal.broken && player.discordId === crystal.breakerId) {
           badge = { name: 'Traitor', type: 'traitor' };
-        } else if (fixCount > Math.max(holdCount, absorbCount)) {
+        } else if (repairCount > Math.max(holdCount, absorbCount)) {
           badge = { name: 'Guardian', type: 'guardian' };
         }
   
         if (badge) {
-          await this.playerScoreHistoryService.assignBadgeToSession(player.discordId, crystal.sessionStart, badge);
+          await playerScoreHistoryService.assignBadgeToSession(player.discordId, crystal.sessionStart, badge);
         }
       }
   }
 
   async startNewSession() {
-  const crystal = await Crystal.findOne();
-  if (!crystal) return;
-  
-  await CrystalHistory.create({
-      sessionStart: crystal.sessionStart,
-      sessionEnd: new Date(),
-      broken: crystal.broken,
-      breakerId: crystal.breakerId,
-      finalDurability: crystal.durability
+    const crystal = await Crystal.findOne();
+    if (!crystal) return;
+    
+    await CrystalHistory.create({
+        sessionStart: crystal.sessionStart,
+        sessionEnd: new Date(),
+        broken: crystal.broken,
+        breakerId: crystal.breakerId,
+        finalDurability: crystal.durability
       });
 
-      const newCrystal = this.createNewCrystal();
+    const newCrystal = this.createNewCrystal();
 
-      this.io.emit('newSession', newCrystal);
-      console.log('New Session beginning!');
+    io.emit('newSession', newCrystal);
+    console.log('New Session beginning!');
   }
 
   async createNewCrystal() {
@@ -184,7 +182,7 @@ export class CrystalService {
 
     await crystal.save();
     
-    this.io.emit('crystalUpdated', { durability: crystal.durability, broken: crystal.broken });
+    io.emit('crystalUpdated', { durability: crystal.durability, broken: crystal.broken });
   }
 
   async protectPlayer(playerBonusId: ObjectId, protectorId: string, bonusId: string, targetId: string, duration: number = 1) {
@@ -198,7 +196,7 @@ export class CrystalService {
         usedAt: now
     });
 
-    this.io.emit('PlayerProtected', { protectorId: protectorId, targetId: targetId });
+    io.emit('PlayerProtected', { protectorId: protectorId, targetId: targetId });
   }
 
 }

@@ -32,7 +32,7 @@ async function seedBonuses() {
       name: 'Guardian Bucket',
       rarity: 'common',
       probability: 16,
-      description: 'Protects 2 players or 1 player + gives +2 points',
+      description: 'Protects 2 players or 1 player from crystal breaking + gives +2 points',
       trigger: 'ON_PLAY'
     },
 
@@ -62,7 +62,7 @@ async function seedBonuses() {
       trigger: 'IMMEDIATE'
     },
 
-    // EPIC - 19%
+    // EPIC - 18%
     {
       id:'7',
       name: 'Lantern of Souls',
@@ -91,7 +91,7 @@ async function seedBonuses() {
       id:'10',
       name: 'Mirror of the Day',
       rarity: 'epic',
-      probability: 5,
+      probability: 4,
       description: 'Inverts points earned today: 5 instead of 0, 2 instead of -2',
       trigger: 'IMMEDIATE'
     },
@@ -102,19 +102,19 @@ async function seedBonuses() {
       name: 'Seal of the Guardian',
       rarity: 'legendary',
       probability: 2,
-      description: 'Protects the crystal for one day; each "absorb" gives 50% of its gain to the holder',
+      description: 'Protects the crystal for one day; each "absorb" gives its gain to the holder',
       trigger: 'ON_OPEN'
     },
     {
       id:'12',
-      name: 'Broken Clock',
+      name: 'Power Spike',
       rarity: 'legendary',
       probability: 2,
-      description: 'Gives 2 actions but not the same action twice',
+      description: '+30 points, -15 crystal durability',
       trigger: 'IMMEDIATE'
     },
 
-    // MYTHIC - 2%
+    // MYTHIC - 3%
     {
       id:'13',
       name: 'Crystal Eclipse',
@@ -130,6 +130,14 @@ async function seedBonuses() {
       probability: 1,
       description: 'Sacrifices your score to 0; crystal falls to 1% durability',
       trigger: 'ON_OPEN'
+    },
+    {
+      id:'15',
+      name: 'All or Nothing',
+      rarity: 'legendary',
+      probability: 2,
+      description: '+50 points, -50 crystal durability',
+      trigger: 'IMMEDIATE'
     },
   ];
 

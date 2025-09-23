@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 router.get('/player-bonus/:playerId', async (req, res) => {
     try {
         const { playerId } = req.params;
-        const player_bonus = await playerBonusService.getPlayerBonuses(playerId);
+        const player_bonus = await playerBonusService.getPlayerBonus(playerId);
         if(!player_bonus) {
             res.status(404).json({ message: "No player bonus found"});
         }
