@@ -40,7 +40,7 @@ export class CrystalService {
       { upsert: true, new: true }
     );
 
-    io.emit("actionAdded", { crystal, player, action, effects });
+    io.to(playerId).emit("actionAdded", { crystal, player, action, effects });
 
     return { crystal, player, effects };
   }
@@ -196,7 +196,7 @@ export class CrystalService {
         usedAt: now
     });
 
-    io.emit('PlayerProtected', { protectorId: protectorId, targetId: targetId });
+    io.to(protectorId).emit('playerProtected', { protectorId: protectorId, targetId: targetId });
   }
 
 }

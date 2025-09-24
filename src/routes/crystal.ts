@@ -12,14 +12,14 @@ router.get('/status', async (req, res) => {
         
         if (!crystal) return res.status(404).json({ message: "Crystal not found!" });
         let crystalStatus = "healthy";
-        if(crystal?.durability < 66) {
-            crystalStatus = "damaged";
-        }
-        else if(crystal?.durability < 33) {
-            crystalStatus = "critical";
-        }
-        else if(crystal?.durability == 0) {
+        if(crystal?.durability <= 0) {
             crystalStatus = "broken";
+        } else if(crystal?.durability < 33) {
+            crystalStatus = "critical";
+        } else if(crystal?.durability < 66) {
+            crystalStatus = "damaged";
+        } else {
+            crystalStatus = "healthy";
         }
 
         res.json(

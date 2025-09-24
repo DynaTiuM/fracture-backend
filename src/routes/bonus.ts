@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import Bonus from '../models/Bonus';
 import { playerBonusService } from '../services/PlayerBonusService';
+import { playerScoreHistoryService } from '../services/PlayerScoreHistoryService';
 
 const router = Router();
 
@@ -21,20 +22,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.get('/player-bonus/:playerId', async (req, res) => {
-    try {
-        const { playerId } = req.params;
-        const player_bonus = await playerBonusService.getPlayerBonus(playerId);
-        if(!player_bonus) {
-            res.status(404).json({ message: "No player bonus found"});
-        }
-        res.json(player_bonus);
-    }
-    catch (err: any) {
-        res.status(500).json({ message: "Server Error", error: err.message });
-    }
-});
-
 router.post('/add', async (req, res) => {
     const { playerId, bonusId } = req.body;
     try {
@@ -48,6 +35,10 @@ router.post('/add', async (req, res) => {
 router.post('/use', async (req, res) => {
     const { playerBonusId, playerId, targetIds, useTomorrow = false } = req.body;
     try {
+        const result = await playerScoreHistoryService.hasPlayerPlayedToday(playerId);
+        if(result.played) {
+            return res.status(403).json({ message: "The player has already played today. Cannot use a bonus afterwards." });
+        }
         const playerBonus = await playerBonusService.useBonus(playerBonusId, playerId, targetIds, useTomorrow);
 
         if (playerBonus.success === false) {
@@ -59,12 +50,15 @@ router.post('/use', async (req, res) => {
     catch (err: any) {
         res.status(500).json({ message: err.message });
     }
-
 });
 
 router.post('/draw', async (req, res) => {
     const { playerId } = req.body;
     try {
+        const hasDrown = await playerBonusService.hasPlayerDrawnBonus(playerId);
+        if (hasDrown) {
+            throw Error("The player has already drawn a chest for this session.");
+        }
         const playerBonus = await playerBonusService.giveChestReward(playerId);
         res.status(200).json(playerBonus);
     } catch (err: any) {

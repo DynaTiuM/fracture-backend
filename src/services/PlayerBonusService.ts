@@ -1,6 +1,7 @@
 import { BonusRegistry } from '../game/BonusRegistry';
 import Bonus from '../models/Bonus';
 import Crystal from '../models/Crystal';
+import Player from '../models/Player';
 import PlayerBonus from '../models/PlayerBonus';
 import PlayerBonusUsage from '../models/PlayerBonusUsage';
 import { io } from '../websocket/socket';
@@ -40,15 +41,28 @@ export class PlayerBonusService {
   }
 
   async useBonus(playerBonusId: string, playerId: string, targetIds: string[] = [], useTomorrow: boolean = false) {
-    const playerBonus = await PlayerBonus.findById(playerBonusId);
-    if (!playerBonus) throw new Error("PlayerBonus not found!");
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const playerBonus = await PlayerBonus.findOne({_id: playerBonusId, used: false, erasedBy: null});
+    if (!playerBonus) throw new Error("PlayerBonus not found or already used (was the bonus deleted by someone else?)");
     if (playerBonus.playerId !== playerId) throw new Error("This bonus does not belong to the player!");
 
-    const actualTargets = targetIds.length ? targetIds : [playerId];
-    
-    const usedAt = useTomorrow 
-      ? new Date(new Date().setDate(new Date().getDate() + 1))
-      : new Date();
+
+    let actualTargets: string[] = [];
+
+    if (playerBonus.bonusId === "10" || playerBonus.bonusId === "11") {
+      const allPlayers = await Player.find({}, "discordId");
+      actualTargets = allPlayers.map(p => p.discordId);
+    } else {
+      actualTargets = targetIds.length ? targetIds : [playerId];
+    }
+
+    const usedAt = new Date();
+    if (useTomorrow) usedAt.setDate(usedAt.getDate() + 1);
     usedAt.setHours(0, 0, 0, 0);
 
     if (!useTomorrow) {
@@ -59,10 +73,20 @@ export class PlayerBonusService {
       if (alreadyUsedToday) {
         throw new Error("A bonus has already been used by the user today!");
       }
+      
+      if (["13", "14", "11", "10"].includes(playerBonus?.bonusId)) {
+        const existing = await PlayerBonusUsage.findOne({
+          bonusId: playerBonus.bonusId,
+          usedAt: { $gte: startOfDay, $lte: endOfDay }
+        });
+        if (existing) {
+          throw new Error(`Bonus ${playerBonus.bonusId} has already been used today!`);
+        }
+      }
 
       const crystal = await Crystal.findOne({});
       const alreadyPlayed = actualTargets.filter(t => crystal?.have_played.includes(t));
-      if (alreadyPlayed.length) {
+      if (alreadyPlayed.length && !["6", "7"].includes(playerBonus?.bonusId)) {
         return { success: false, message: `Targets already played today: ${alreadyPlayed.join(', ')}` };
       }
     }
@@ -73,10 +97,6 @@ export class PlayerBonusService {
     const usageRecords = [];
 
     for (const targetId of actualTargets) {
-      if(targetId === playerId && playerBonus.bonusId === '3') {
-        throw Error("The target ID cannot be the same as the Player ID!");
-      }
-
       const usage = await PlayerBonusUsage.create({
         playerBonusId: playerBonus._id,
         bonusId: playerBonus.bonusId,
@@ -95,32 +115,36 @@ export class PlayerBonusService {
         date: usedAt
       });
     }
+    
+    playerBonus.used = true;
+    playerBonus.save();
 
     return { success: true, usageRecords };
   }
 
 
   async getPlayerBonus(playerId: string) {
-    const allBonuses = await PlayerBonus.find({ playerId });
-    const usages = await PlayerBonusUsage.find({ playerId });
+    const allBonuses = await PlayerBonus.find({
+      playerId,
+      used: false,
+      erasedBy: null
+    });
 
-    const usedBonusIds = usages.map(u => u.playerBonusId.toString());
+    const enrichedBonuses = await Promise.all(
+      allBonuses.map(async (playerBonus) => {
+        const bonus = await Bonus.findOne({ id: playerBonus.bonusId });
+        return {
+          ...playerBonus.toObject(),
+          name: bonus?.name,
+          description: bonus?.description,
+          rarity: bonus?.rarity,
+          targetMode: bonus?.targetMode
+        };
+      })
+    );
 
-    const unused = allBonuses.filter(b => !usedBonusIds.includes(b._id.toString()));
-
-    const enrichBonus = async (playerBonus: any) => {
-      const bonus = await Bonus.findOne({ id: playerBonus.bonusId });
-      return {
-        ...playerBonus.toObject(),
-        name: bonus?.name,
-        description: bonus?.description,
-        rarity: bonus?.rarity
-      };
-    };
-
-    return await Promise.all(unused.map(b => enrichBonus(b)));
+    return enrichedBonuses;
   }
-
 
   async giveChestReward(playerId: string) {
     const randomBonus = await bonusService.drawRandomBonus(playerId);

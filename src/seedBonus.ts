@@ -32,8 +32,9 @@ async function seedBonuses() {
       name: 'Guardian Bucket',
       rarity: 'common',
       probability: 16,
-      description: 'Protects 2 players or 1 player from crystal breaking + gives +2 points',
-      trigger: 'ON_PLAY'
+      description: 'Protect 2 players, OR protect 1 player and gain +2 points.',
+      trigger: 'ON_PLAY',
+      targetMode: 'multiple'
     },
 
     // RARE - 25%
@@ -42,24 +43,27 @@ async function seedBonuses() {
       name: 'Thorns of Discord',
       rarity: 'rare',
       probability: 10,
-      description: 'Target player: next "absorb" gives 0 points and damages the crystal',
-      trigger: 'ON_PLAY'
+      description: 'Curse a player: if they choose the action "absorb", it gives them 0 points and damages the crystal',
+      trigger: 'ON_PLAY',
+      targetMode: 'single'
     },
     {
       id:'5',
       name: 'Hand of Forgetfulness',
       rarity: 'rare',
       probability: 7,
-      description: 'Erases the best item owned by a player ≤ epic',
-      trigger: 'ON_OPEN'
+      description: 'Erases the best item ≤ epic owned by a player',
+      trigger: 'ON_OPEN',
+      targetMode: 'single'
     },
     {
       id:'6',
       name: 'Revealing Shard',
       rarity: 'rare',
       probability: 8,
-      description: 'Reveals the action of a targeted player who have already played today + bonus +3 points',
-      trigger: 'IMMEDIATE'
+      description: 'Reveals the action of a targeted player who has already played today and grants +3 points',
+      trigger: 'IMMEDIATE',
+      targetMode: 'single'
     },
 
     // EPIC - 18%
@@ -68,8 +72,9 @@ async function seedBonuses() {
       name: 'Lantern of Souls',
       rarity: 'epic',
       probability: 5,
-      description: 'Reveals the actions of 2 targeted players who have already played today + bonus +5 points',
-      trigger: 'IMMEDIATE'
+      description: 'Reveals the actions of 2 targeted players who have already played today and grants +3 points',
+      trigger: 'IMMEDIATE',
+      targetMode: 'multiple'
     },
     {
       id:'8',
@@ -84,15 +89,16 @@ async function seedBonuses() {
       name: 'Seed of Chaos',
       rarity: 'epic',
       probability: 4,
-      description: 'Randomly gives +20 or -20 points to a player',
-      trigger: 'IMMEDIATE'
+      description: 'Randomly gives +20 or -20 points to a targeted player that already played today.',
+      trigger: 'IMMEDIATE',
+      targetMode: 'single'
     },
     {
       id:'10',
       name: 'Mirror of the Day',
       rarity: 'epic',
       probability: 4,
-      description: 'Inverts points earned today: 5 instead of 0, 2 instead of -2',
+      description: 'Inverts points earned today for every players: -5 instead of 5 for absorb, 2 instead of -2 for repair, and 5 instead of 0 for hold.',
       trigger: 'IMMEDIATE'
     },
 
@@ -102,7 +108,7 @@ async function seedBonuses() {
       name: 'Seal of the Guardian',
       rarity: 'legendary',
       probability: 2,
-      description: 'Protects the crystal for one day; each "absorb" gives its gain to the holder',
+      description: 'Protects the crystal for one day; each absorb action by other players gives its points to you.',
       trigger: 'ON_OPEN'
     },
     {
@@ -120,7 +126,7 @@ async function seedBonuses() {
       name: 'Crystal Eclipse',
       rarity: 'mythic',
       probability: 1,
-      description: 'Steals all points earned today by other players',
+      description: 'Steals all points earned today by other players (negative points included!)',
       trigger: 'IMMEDIATE'
     },
     {
@@ -136,7 +142,7 @@ async function seedBonuses() {
       name: 'All or Nothing',
       rarity: 'legendary',
       probability: 2,
-      description: '+50 points, -50 crystal durability',
+      description: '+50 points, -45 crystal durability',
       trigger: 'IMMEDIATE'
     },
   ];

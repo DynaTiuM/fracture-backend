@@ -20,7 +20,7 @@ export class PlayerScoreHistoryService {
   }
 
   async hasPlayerPlayedToday(playerId: string): Promise<{ played: boolean; action?: string }> {
-    const crystal = await Crystal.findOne({ "have_played": playerId }).lean();
+    const crystal = await Crystal.findOne({ "have_played": playerId });
     // No crystal found with the player in have_played, which means that the player hasn't played today
     if (!crystal) return { played: false };
 

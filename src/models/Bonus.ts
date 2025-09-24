@@ -4,6 +4,7 @@ export const rarity = ['common', 'rare', 'epic', 'legendary', 'mythic'] as const
 export type rarityType = typeof rarity[number];
 
 export type BonusTrigger = 'IMMEDIATE' | 'ON_PLAY' | 'ON_OPEN' | 'NEXT_DAY';
+export type TargetMode = 'none' | 'single' | 'multiple';
 
 export interface IBonus {
     id: string;
@@ -13,6 +14,7 @@ export interface IBonus {
     description: string;
     duration?: number;
     trigger: BonusTrigger;
+    targetMode: TargetMode;
 }
 
 const bonusSchema = new Schema<IBonus>({
@@ -22,7 +24,8 @@ const bonusSchema = new Schema<IBonus>({
     rarity: { type: String, enum: rarity, required: true },
     description: { type: String, required: true },
     duration: { type: Number, min: 0 },
-    trigger: { type: String, enum: ['IMMEDIATE', 'ON_PLAY', 'ON_OPEN', 'NEXT_DAY'], required: true }
+    trigger: { type: String, enum: ['IMMEDIATE', 'ON_PLAY', 'ON_OPEN', 'NEXT_DAY'], required: true },
+    targetMode: { type: String, enum: ['none', 'single', 'multiple'], default: 'none' }
 })
 
 export default model<IBonus>('Bonus', bonusSchema);

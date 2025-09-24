@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import Crystal from '../models/Crystal'
 import { CrystalService } from './CrystalService';
+import { BonusHandler } from '../game/BonusHandler';
 
 export class SchedulerService {
   private crystalService = new CrystalService();
@@ -9,6 +10,8 @@ export class SchedulerService {
     // Triggers and manages what has been done yesterday
     /*cron.schedule('* * * * *', async () => {
       console.log("CRON Executed!")
+      BonusHandler.
+
       const broken = await this.crystalService.checkCrystalBreak();
       // If the crystal broke, we have to assign the Badges and start a new session
       if (broken) {

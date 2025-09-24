@@ -3,6 +3,7 @@ import Player from '../models/Player';
 import { playerBonusService } from '../services/PlayerBonusService';
 import { crystalService } from '../services/CrystalService';
 import { playerScoreHistoryService } from '../services/PlayerScoreHistoryService';
+import { BonusHandler } from '../game/BonusHandler';
 
 const router = Router();
 
@@ -111,5 +112,33 @@ router.get('/:id/has-played', async (req, res) => {
     res.status(400).send(err.message);
   }
 });
+
+router.get('/:playerId/bonus', async (req, res) => {
+    try {
+        const { playerId } = req.params;
+        const player_bonus = await playerBonusService.getPlayerBonus(playerId);
+        if(!player_bonus) {
+            res.status(404).json({ message: "No player bonus found"});
+        }
+        res.json(player_bonus);
+    }
+    catch (err: any) {
+        res.status(500).json({ message: "Server Error", error: err.message });
+    }
+});
+
+// TEST
+router.get('/reveal-action', async (req, res) => {
+
+  try {
+    const result = await BonusHandler.erasePlayerBestItem("336940403796344856", "33");
+
+    res.status(200).send(result);
+  }
+  catch (err: any) {
+    res.status(400).send(err.message);
+  }
+});
+
 
 export default router;
